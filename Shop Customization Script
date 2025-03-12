@@ -1,0 +1,136 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ShopCustomizationScript : MonoBehaviour
+{
+    [SerializeField] GameObject itemBoxHolder;
+    [SerializeField] GameObject itemBox;
+    [SerializeField] GameObject spawnBookshelfButton;
+    [SerializeField] GameObject spawnTableButton;
+    [SerializeField] GameObject spawnChairButton;
+    [SerializeField] GameObject spawnDeskButton;
+    [SerializeField] GameObject spawnComputerButton;
+    [SerializeField] GameObject spawnDestroyFurnitureButton;
+    [SerializeField] GameObject buttonParent;
+    GameObject spawnItemBoxHolder;
+    GameObject itemBoxItem;
+    public GameObject bookshelfButton;
+    public GameObject tableButton;
+    public GameObject chairButton;
+    public GameObject deskButton;
+    public GameObject computerButton;
+    public GameObject destroyFurnitureButton;
+
+    public bool spawnedItemBoxHolder;
+
+    public int numberOfChildren;
+
+    Vector2 firstPosition;
+
+    SceneManagerScript sceneManager;
+    ShopInterface shopInterface;
+
+    void Start()
+    {
+        sceneManager = FindObjectOfType<SceneManagerScript>();
+        shopInterface = FindObjectOfType<ShopInterface>();
+    }
+
+    void Update()
+    {
+        DestroyChildren();
+    }
+
+    public void CustomizeShopInterface()
+    {
+        if(spawnedItemBoxHolder == false)
+        {
+            spawnItemBoxHolder = Instantiate(itemBoxHolder, new Vector2(Camera.main.transform.position.x, Camera.main.transform.position.y - 4.45f), Quaternion.identity);
+            spawnItemBoxHolder.transform.SetParent(Camera.main.transform);
+            spawnedItemBoxHolder = true;
+        }
+
+        numberOfChildren = 0;
+        if(sceneManager.bookshelfNumber > 0 && bookshelfButton == null)
+        {
+            bookshelfButton = Instantiate(itemBox, new Vector2(0,0), Quaternion.identity);
+            bookshelfButton.transform.SetParent(buttonParent.transform);
+        }
+        if(sceneManager.tableNumber > 0 && tableButton == null)
+        {
+            tableButton = Instantiate(itemBox, new Vector2(0,0), Quaternion.identity);
+            tableButton.transform.SetParent(buttonParent.transform);
+        }
+        if(sceneManager.chairNumber > 0 && chairButton == null)
+        {
+            chairButton = Instantiate(itemBox, new Vector2(0,0), Quaternion.identity);
+            chairButton.transform.SetParent(buttonParent.transform);
+        }   
+        if(sceneManager.deskNumber > 0 && deskButton == null)
+        {
+            deskButton = Instantiate(itemBox, new Vector2(0,0), Quaternion.identity);
+            deskButton.transform.SetParent(buttonParent.transform);
+        }
+        if(sceneManager.computerNumber > 0 && computerButton == null)
+        {
+            computerButton = Instantiate(itemBox, new Vector2(0,0), Quaternion.identity);
+            computerButton.transform.SetParent(buttonParent.transform);
+        }
+        if(destroyFurnitureButton == null)
+        {
+            firstPosition = Camera.main.transform.position;
+            destroyFurnitureButton = Instantiate(itemBox, new Vector2(firstPosition.x + 10,firstPosition.y - 4.3f), Quaternion.identity);
+            destroyFurnitureButton.transform.SetParent(Camera.main.transform);
+        }
+
+        foreach(Transform child in buttonParent.transform)
+        {
+            numberOfChildren++;
+        }
+
+        PositionElements();
+    }
+
+    void PositionElements()
+    {
+        firstPosition = Camera.main.transform.position;
+
+        if(numberOfChildren > 0)
+        {
+            buttonParent.transform.GetChild(0).gameObject.transform.position = new Vector2(firstPosition.x - 10, firstPosition.y - 4.3f);
+        }
+        if(numberOfChildren > 1)
+        {
+            buttonParent.transform.GetChild(1).gameObject.transform.position = new Vector2(firstPosition.x - 7, firstPosition.y - 4.3f);
+        }
+        if(numberOfChildren > 2)
+        {
+            buttonParent.transform.GetChild(2).gameObject.transform.position = new Vector2(firstPosition.x - 4, firstPosition.y - 4.3f);
+        }
+        if(numberOfChildren > 3)
+        {
+            buttonParent.transform.GetChild(3).gameObject.transform.position = new Vector2(firstPosition.x - 1, firstPosition.y - 4.3f);
+        }
+        if(numberOfChildren > 4)
+        {
+            buttonParent.transform.GetChild(4).gameObject.transform.position = new Vector2(firstPosition.x + 2, firstPosition.y - 4.3f);
+        }
+    }
+
+    void DestroyChildren()
+    {
+        if(sceneManager.customizingShop == false)
+        {
+            numberOfChildren = 0;
+            Destroy(destroyFurnitureButton);
+            Destroy(spawnItemBoxHolder);
+            foreach(Transform child in buttonParent.transform)
+            {
+                Destroy(buttonParent.transform.GetChild(numberOfChildren).gameObject);
+                numberOfChildren++;
+            }
+            numberOfChildren = 0;
+        }
+    }
+}
