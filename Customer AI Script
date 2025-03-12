@@ -1,0 +1,579 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CustomerAIScript : MonoBehaviour
+{
+    int bookChance;
+    int moveTo;
+    int tryAgain;
+    int goldChance;
+    int tableFriendAmount;
+    public int randomSeconds;
+    public int customerType;
+
+    bool readyToCheckout;
+    bool goldGiven;
+    bool alreadyRan;
+    bool satDown;
+    bool generateTableFriends;
+    public bool customerFriend;
+
+    [SerializeField] GameObject goHere;
+    GameObject tableFriend;
+    public GameObject newTable;
+
+    SceneManagerScript sceneManager;
+    CharacterMovement characterMovement;
+    FurnitureMovement furnitureMovement;
+    SpriteController spriteController;
+
+    void Start()
+    {
+        sceneManager = GameObject.FindObjectOfType<SceneManagerScript>();
+        characterMovement = GameObject.FindObjectOfType<CharacterMovement>();
+
+        if(customerFriend == false)
+        {
+            customerType = Random.Range(0,6);
+        }
+        else
+        {
+            customerType = 2;
+        }
+        tryAgain = Random.Range(3,5);
+
+        if(customerType == 1)
+        {
+            BookReturnBehaivour();
+        }
+        else if(customerType == 2)
+        {
+            if(sceneManager.TableGiver.Count == 0 && customerFriend == false)
+            {
+                customerType = 6;
+                CustomerDecisions();
+            }
+            else
+            {
+                TableBehaviour();
+            }
+        }
+        else if(customerType >= 3 && sceneManager.BookGiver.Count >= sceneManager.customerNumber * 1.5)
+        {
+            CustomerDecisions();
+        }
+        else if(sceneManager.TableGiver.Count > 0)
+        {
+            customerType = 2;
+            TableBehaviour();
+        }
+        else
+        {
+            Debug.Log("Ran");
+            sceneManager.stopSpawning = true;
+            customerType = 6;
+            CustomerDecisions();
+        }
+    }
+
+    void Update()
+    {
+        if(goHere != null)
+        {
+            transform.position = Vector2.MoveTowards(transform.position, goHere.transform.position, 2f * Time.deltaTime);
+        }
+
+        if(generateTableFriends == true)
+        {
+            TableFriendGenerator();
+        }
+
+        if(goHere.name == "Chair(Clone)" && gameObject.transform.position == goHere.transform.position && satDown == false)
+        {
+            SetUpTable();
+        }
+
+        if(goHere != null && goHere.name != "Customer Checkout Spot" && goHere.name != "Doormat" && sceneManager.storeOpen == false)
+        {
+            alreadyRan = true;
+            if(goHere.name == "Customer Bookshelf Spot")
+            {
+                CustomerDecisions();
+            }
+            else if(goHere.name == "Chair(Clone)")
+            {
+                TableBehaviour();
+            }
+            else if(goHere.name == "Book Return Collider")
+            {
+                BookReturnBehaivour();
+            }
+        }
+
+        if(goHere.name == "Customer Bookshelf Spot" || goHere.name == "Book Return Collider" || goHere.name == "Chair(Clone)")
+        {
+            if(transform.position == goHere.transform.position && alreadyRan == false)
+            {
+                StartCoroutine(WaitToDecide(randomSeconds));
+            }
+        }
+
+        if(goHere.name == "Doormat" && transform.position == goHere.transform.position)
+        {
+            if(customerFriend == false)
+            {
+                sceneManager.customerNumber--;
+                if(sceneManager.stopSpawning == true)
+                {
+                    sceneManager.stopSpawning = false;
+                }
+            }
+            Destroy(gameObject);
+        }
+
+        CustomerCheckout();
+    }
+    
+    IEnumerator WaitToDecide(float waitTime)
+    {
+        alreadyRan = true;
+        yield return new WaitForSeconds(waitTime);
+        if(sceneManager.storeOpen == true)
+        {
+            if(customerType == 1)
+            {
+                goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().bookReturnNumber++;
+                BookReturnBehaivour();
+            }
+            else if(customerType == 2)
+            {
+                TableBehaviour();
+            }
+            else
+            {
+                CustomerDecisions();
+            }
+        }
+    }
+
+    void CustomerDecisions()
+    {
+        if(bookChance <= tryAgain)
+        {
+            if(goHere != null && goHere.name == "Customer Bookshelf Spot")
+            {
+                sceneManager.BookGiver.Add(goHere);
+            }
+            randomSeconds = Random.Range(5,9);
+            moveTo = Random.Range(0, sceneManager.BookGiver.Count);
+            goHere = sceneManager.BookGiver[moveTo];
+            sceneManager.BookGiver.RemoveAt(moveTo);
+            bookChance = Random.Range(1,4);
+            tryAgain--;
+            alreadyRan = false;
+        }
+        else
+        {
+            sceneManager.BookGiver.Add(goHere);
+            if(sceneManager.storeOpen == false)
+            {
+                goHere = GameObject.Find("Doormat");
+            }
+            else
+            {
+                alreadyRan = false;
+                goHere = GameObject.Find("Customer Checkout Spot");
+            }
+        }
+    }
+
+    void TableBehaviour()
+    {        
+        if(alreadyRan == false)
+        {
+            if(customerFriend == false)
+            {
+                moveTo = Random.Range(0, sceneManager.TableGiver.Count);
+                newTable = sceneManager.TableGiver[moveTo];
+                sceneManager.TableGiver.Remove(newTable);
+                randomSeconds = Random.Range(15,22);
+            }
+
+            furnitureMovement = newTable.GetComponent<FurnitureMovement>();
+            moveTo = Random.Range(0, furnitureMovement.CustomerChairAmount.Count);
+            goHere = furnitureMovement.CustomerChairAmount[moveTo];
+            furnitureMovement.CustomerChairAmount.Remove(goHere);
+
+            if(tableFriend == false)
+            {
+                generateTableFriends = true;
+            }
+        }
+        else
+        {
+            tryAgain = Random.Range(0,3);
+            if(satDown == true && newTable.name == "Table(Clone)" && tableFriend == false)
+            {
+                if(tryAgain == 1)
+                {
+                    furnitureMovement.spriteNumber = 23;
+                    furnitureMovement.FurnitureSpriteManager();
+                    furnitureMovement.tableDirty = true;
+                }
+                else
+                {
+                    furnitureMovement.spriteNumber = 0;
+                    furnitureMovement.FurnitureSpriteManager();
+                    sceneManager.TableGiver.Add(newTable);
+                }
+            }
+            else if(satDown == true && newTable.name == "Desk(Clone)" && furnitureMovement.computerPlaced == false)
+            {
+                if(tryAgain == 1)
+                {
+                    furnitureMovement.tableDirty = true;
+                    SetUpTable();
+                }
+                else
+                {
+                    if(furnitureMovement.spriteNumber == 0)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingDesk;
+                    }
+                    else if(furnitureMovement.spriteNumber == 2)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.backFacingDesk;
+                    }
+                    else
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingDesk;
+                    }
+                    sceneManager.TableGiver.Add(newTable);
+                }
+            }
+            else if(satDown == true && newTable.name == "Desk(Clone)" && furnitureMovement.computerPlaced == true)
+            {
+                goldChance = 4;
+                GiveGold();
+            }
+            furnitureMovement.CustomerChairAmount.Add(goHere);
+            sceneManager.TableGiver.Add(newTable);
+            goHere = GameObject.Find("Doormat");
+        }
+    }
+
+    void TableFriendGenerator()
+    {
+            tryAgain = Random.Range(0,2);
+            if(tryAgain == 1 && furnitureMovement.CustomerChairAmount.Count > 0)
+            {
+                tableFriend = Instantiate(sceneManager.customer, new Vector2(GameObject.Find("Doormat").transform.position.x, GameObject.Find("Doormat").transform.position.y), Quaternion.identity);
+                tableFriend.GetComponent<CustomerAIScript>().randomSeconds = randomSeconds;
+                tableFriend.GetComponent<CustomerAIScript>().customerFriend = true;
+                tableFriend.GetComponent<CustomerAIScript>().newTable = newTable;
+                tableFriendAmount++;
+            }
+            else
+            {
+                generateTableFriends = false;
+            }
+
+    }
+
+    void BookReturnBehaivour()
+    {
+        if(alreadyRan == false)
+        {
+            goHere = GameObject.Find("Book Return Collider");
+            if(goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().bookReturnOccupied == true)
+            {
+                customerType = 6;
+                CustomerDecisions();
+            }
+            else
+            {
+                goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().bookReturnOccupied = true;
+            }
+            randomSeconds = Random.Range(3,6);
+        }
+        else
+        {
+            tryAgain = Random.Range(0,3);
+            goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().bookReturnOccupied = false;
+            if(goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().spriteNumber == 0)
+            {
+                goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().spriteNumber = 1;
+            }
+            else if(goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().spriteNumber == 2 && goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().bookReturnNumber <= 5)
+            {
+                goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().spriteNumber = 3;
+            }
+            else if(goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().spriteNumber == 3 && goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().bookReturnNumber > 5)
+            {
+                goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().spriteNumber = 4;
+            }
+            goHere.transform.parent.transform.parent.GetComponent<FurnitureMovement>().FurnitureSpriteManager();
+            if(tryAgain < 1 || sceneManager.storeOpen == false)
+            {
+                goHere = GameObject.Find("Doormat");
+            }
+            else
+            {
+                customerType = 6;
+                CustomerDecisions();
+            }
+
+        }
+    }
+
+    void CustomerCheckout()
+    {
+        if(goHere.name == "Customer Checkout Spot" && alreadyRan == false)
+        {
+            if(sceneManager.checkoutPositionOne == true && sceneManager.checkoutPositionTwo == false)
+            {
+                goHere = GameObject.Find("Checkout").transform.GetChild(2).gameObject;
+                if(transform.position == goHere.transform.position)
+                {
+                    alreadyRan = true;
+                    sceneManager.checkoutPositionTwo = true;
+                }
+            }
+            else if(sceneManager.checkoutPositionTwo == true)
+            {
+                goHere = GameObject.Find("Checkout").transform.GetChild(3).gameObject;
+                if(transform.position == goHere.transform.position)
+                {
+                    alreadyRan = true;
+                }
+            }
+            else
+            {
+                goHere = GameObject.Find("Checkout").transform.GetChild(1).gameObject;
+                if(transform.position == goHere.transform.position)
+                {
+                    alreadyRan = true;
+                    sceneManager.checkoutPositionOne = true;
+                    readyToCheckout = true;
+                }
+            }
+        }
+
+        if(sceneManager.checkoutPositionOne == false && alreadyRan == true)
+        {
+            if(goHere == GameObject.Find("Checkout").transform.GetChild(2).gameObject)
+            {
+                sceneManager.checkoutPositionTwo = false;
+                alreadyRan = false;
+            }
+            else if(goHere == GameObject.Find("Checkout").transform.GetChild(3).gameObject)
+            {
+                alreadyRan = false;
+            }
+        }
+
+        if(characterMovement.tryCheckout == true && readyToCheckout == true)
+        {
+            if(goldGiven == false)
+            {
+                sceneManager.checkoutPositionOne = false;
+                goldChance = Random.Range(0,4);
+                GiveGold();
+            }
+            goHere = GameObject.Find("Doormat");
+        }
+    }
+
+    void GiveGold()
+    {
+        if(goldChance < 3)
+        {
+            sceneManager.goldAmount += 5;
+        }
+        else if(goldChance <= 1)
+        {
+            sceneManager.goldAmount += 3;
+        }
+        else
+        {
+            sceneManager.goldAmount++;
+        }
+        goldGiven = true;
+    }
+
+    void SetUpTable()
+    {
+        satDown = true;
+        if(newTable.name == "Table(Clone)" && customerFriend == false)
+        {
+            if(tableFriendAmount == 0)
+            {
+                if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotOne)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 1;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 2;
+                    }
+                }
+                else if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotTwo)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 3;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 4;
+                    }
+                }
+                else if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotThree)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 5;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 6;
+                    }
+                }
+                else if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotFour)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 7;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 8;
+                    }
+                }
+            }
+            else if(tableFriendAmount == 1)
+            {
+                if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotOne && tableFriend.GetComponent<CustomerAIScript>().goHere.GetComponent<FurnitureMovement>().chairSpot == tableFriend.GetComponent<CustomerAIScript>().newTable.GetComponent<FurnitureMovement>().chairSpotThree)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 9;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 10;
+                    }
+                }
+                else if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotTwo && tableFriend.GetComponent<CustomerAIScript>().goHere.GetComponent<FurnitureMovement>().chairSpot == tableFriend.GetComponent<CustomerAIScript>().newTable.GetComponent<FurnitureMovement>().chairSpotFour)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 11;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 12;
+                    }
+                }
+                else if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotOne && tableFriend.GetComponent<CustomerAIScript>().goHere.GetComponent<FurnitureMovement>().chairSpot == tableFriend.GetComponent<CustomerAIScript>().newTable.GetComponent<FurnitureMovement>().chairSpotFour)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 13;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 14;
+                    }
+                }
+                else if(goHere.GetComponent<FurnitureMovement>().chairSpot == newTable.GetComponent<FurnitureMovement>().chairSpotTwo && tableFriend.GetComponent<CustomerAIScript>().goHere.GetComponent<FurnitureMovement>().chairSpot == tableFriend.GetComponent<CustomerAIScript>().newTable.GetComponent<FurnitureMovement>().chairSpotOne)
+                {
+                    tryAgain = Random.Range(0,2);
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.spriteNumber = 15;
+                    }
+                    else
+                    {
+                        furnitureMovement.spriteNumber = 16;
+                    }
+                }
+            }
+            furnitureMovement.FurnitureSpriteManager();
+        }
+        else if(newTable.name == "Desk(Clone)")
+        {
+            tryAgain = Random.Range(0,4);
+            spriteController = GameObject.FindObjectOfType<SpriteController>();
+            if(furnitureMovement.tableDirty == false)
+            {
+                if(furnitureMovement.spriteNumber == 0)
+                {
+                    if(tryAgain <= 1)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingOccupiedDeskOne;
+                    }
+                    else
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingOccupiedDeskTwo;
+                    }
+                }
+                else if(furnitureMovement.spriteNumber == 2)
+                {
+                    if(tryAgain <= 1)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.backFacingOccupiedDeskOne;
+                    }
+                    else
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.backFacingOccupiedDeskTwo;
+                    }
+                }
+                else
+                {
+                    if(tryAgain == 1)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingOccupiedDeskOne;
+                    }
+                    else if(tryAgain == 1)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingOccupiedDeskTwo;
+                    }
+                    else if(tryAgain == 2)
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingOccupiedDeskThree;
+                    }
+                    else
+                    {
+                        furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingOccupiedDeskFour;
+                    }
+                }
+            }
+            else
+            {
+                if(furnitureMovement.spriteNumber == 0)
+                {
+                    furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingDirtyDesk;
+                }
+                else if(furnitureMovement.spriteNumber == 2)
+                {
+                    furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.backFacingDirtyDesk;
+                }
+                else
+                {
+                    furnitureMovement.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingDiryDesk;
+                }
+            }
+        }
+    }
+}
