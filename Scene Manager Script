@@ -1,0 +1,479 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+
+public class SceneManagerScript : MonoBehaviour
+{
+    public int customerNumber;
+    public int bookshelfNumber;
+    public int tableNumber;
+    public int chairNumber;
+    public int deskNumber;
+    public int computerNumber;
+    int randomSpawnNumber;
+    int currentChild;
+    public int goldAmount;
+    [SerializeField] int goldAmountOnes;
+    [SerializeField] int goldAmountTens;
+    [SerializeField] int goldAmountHundreds;
+    [SerializeField] int goldAmountThousands;
+
+    public bool checkoutPositionOne;
+    public bool checkoutPositionTwo;    
+    public bool storeOpen;
+    public bool cantPickUp;
+    public bool customizingShop;
+    public bool stopSpawning;
+    bool trySpawn;
+
+    public GameObject bookshelf;
+    [SerializeField] GameObject table;
+    [SerializeField] GameObject chair;
+    [SerializeField] GameObject desk;
+    [SerializeField] GameObject computer;
+    public GameObject currentFurniture;
+    public GameObject customer;
+    public GameObject shopSign;
+    [SerializeField] GameObject goldAmountOnesSign;
+    [SerializeField] GameObject goldAmountTensSign;
+    [SerializeField] GameObject goldAmountHundredsSign;
+    [SerializeField] GameObject goldAmountThousandsSign;
+
+    [SerializeField] Transform doorMat;
+
+    Vector2 worldPosition;
+    
+    public RaycastHit2D hit;
+
+    [SerializeField] FurnitureMovement furnitureMovement;
+    [SerializeField] ShopInterface shopInterface;
+    [SerializeField] CharacterMovement characterMovement;
+    [SerializeField] ShopCustomizationScript shopCustomizationScript;
+    [SerializeField] SpriteController spriteController;
+
+    public List<GameObject> BookGiver = new List<GameObject>();
+    public List<GameObject> TableGiver = new List<GameObject>();
+
+    void Update()
+    {
+        if(customizingShop == true)
+        {
+            FurnitureSpawning();
+        }
+        
+        if(stopSpawning == false && storeOpen == true && trySpawn == false)
+        {
+            trySpawn = true;
+            randomSpawnNumber = Random.Range(4,8);
+            StartCoroutine(SpawnCustomer(randomSpawnNumber));
+        }
+
+        if(currentFurniture != null)
+        {
+            if(currentFurniture.GetComponent<FurnitureMovement>().collidingWithDestroyButton == true && Input.GetMouseButtonDown(0) || customizingShop == false)
+            {
+                currentChild = 0;
+                furnitureMovement = currentFurniture.GetComponent<FurnitureMovement>();
+                FurnitureHandlings();
+            }
+        }
+        
+        if(Input.GetMouseButtonDown(0))
+        {
+            PickUpFurniture();
+        }
+
+        if(currentFurniture != null && currentFurniture.GetComponent<FurnitureMovement>().cantPlace == true)
+        {
+            currentFurniture.GetComponent<FurnitureMovement>().beenPlaced = false;
+        }
+
+        CheckGoldAmount();
+    }
+
+    IEnumerator SpawnCustomer(float waitTime)
+    {
+        yield return new WaitForSeconds(waitTime);
+        if(storeOpen == false)
+        {
+            trySpawn = false;
+        }
+        else
+        {
+            Instantiate(customer, new Vector2(doorMat.position.x, doorMat.position.y), Quaternion.identity);
+            customerNumber++;
+            trySpawn = false;
+        }
+    }
+
+    void PickUpFurniture()
+    {
+        hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
+
+        if(customizingShop == true)
+        {
+            if(currentFurniture != null && currentFurniture.GetComponent<FurnitureMovement>().beenPlaced == false)
+            {
+                currentFurniture.GetComponent<FurnitureMovement>().TryToPlace();
+            }
+            else if(hit.collider != null && hit.collider.gameObject.tag == "Placeable")
+            {
+                currentFurniture = hit.collider.gameObject;
+                furnitureMovement = currentFurniture.GetComponent<FurnitureMovement>();
+                furnitureMovement.TryToPlace();
+            }
+        }
+        else
+        {
+            if(hit.collider != null && hit.collider.gameObject.name == "Shop Sign")
+            {
+                if(storeOpen == true)
+                {
+                    shopSign.GetComponent<SpriteRenderer>().sprite = spriteController.storeClosedSign;
+                    storeOpen = false;
+                }
+                else if(storeOpen == false && customerNumber == 0)
+                {
+                    shopSign.GetComponent<SpriteRenderer>().sprite = spriteController.storeOpenSign;
+                    storeOpen = true;
+                }
+            }
+        }
+    }
+
+    void FurnitureSpawning()
+    {
+        if(customizingShop == true)
+        {
+            if(currentFurniture != null && currentFurniture.GetComponent<FurnitureMovement>().beenPlaced == false)
+            {
+                return;
+            }
+
+            Vector2 mousePos = Input.mousePosition;
+            worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
+            worldPosition = new Vector2(Mathf.Round(worldPosition.x), Mathf.Round(worldPosition.y));
+
+            if(hit.collider != null && hit.collider.gameObject == shopCustomizationScript.bookshelfButton)
+            {
+                currentFurniture = Instantiate(bookshelf, new Vector2(worldPosition.x, worldPosition.y), Quaternion.identity);
+                currentFurniture.GetComponent<SpriteRenderer>().sortingOrder += 102;
+                bookshelfNumber--;
+                if(bookshelfNumber == 0)
+                {
+                    Destroy(shopCustomizationScript.bookshelfButton);
+                    shopCustomizationScript.CustomizeShopInterface();
+                }
+            }
+            else if (hit.collider != null && hit.collider.gameObject == shopCustomizationScript.tableButton)
+            {
+                currentFurniture = Instantiate(table, new Vector2(worldPosition.x, worldPosition.y), Quaternion.identity);
+                currentFurniture.GetComponent<SpriteRenderer>().sortingOrder += 102;
+                tableNumber--;
+                if(tableNumber == 0)
+                {
+                    Destroy(shopCustomizationScript.tableButton);
+                    shopCustomizationScript.CustomizeShopInterface();
+                }
+            }
+            else if(hit.collider != null && hit.collider.gameObject == shopCustomizationScript.chairButton)
+            {
+                currentFurniture = Instantiate(chair, new Vector2(worldPosition.x, worldPosition.y), Quaternion.identity);
+                currentFurniture.GetComponent<SpriteRenderer>().sortingOrder += 102;
+                chairNumber--;
+                if(chairNumber == 0)
+                {
+                    Destroy(shopCustomizationScript.chairButton);
+                    shopCustomizationScript.CustomizeShopInterface();
+                }
+            }
+            else if(hit.collider != null && hit.collider.gameObject == shopCustomizationScript.deskButton)
+            {
+                currentFurniture = Instantiate(desk, new Vector2(worldPosition.x, worldPosition.y), Quaternion.identity);
+                currentFurniture.GetComponent<SpriteRenderer>().sortingOrder += 102;
+                deskNumber--;
+                if(deskNumber == 0)
+                {
+                    Destroy(shopCustomizationScript.deskButton);
+                    shopCustomizationScript.CustomizeShopInterface();
+                }
+            }
+            else if(hit.collider != null && hit.collider.gameObject == shopCustomizationScript.computerButton)
+            {
+                currentFurniture = Instantiate(computer, new Vector2(worldPosition.x, worldPosition.y), Quaternion.identity);
+                currentFurniture.GetComponent<SpriteRenderer>().sortingOrder += 102;
+                for(int i = 0; i < currentFurniture.transform.childCount; i++)
+                {
+                    currentFurniture.transform.GetChild(i).GetComponent<SpriteRenderer>().sortingOrder += 102;
+                }
+                computerNumber--;
+                if(computerNumber == 0)
+                {
+                    Destroy(shopCustomizationScript.computerButton);
+                    shopCustomizationScript.CustomizeShopInterface();
+                }
+            }
+        }
+    }
+
+    void FurnitureHandlings()
+    {
+        if(currentFurniture.name == "Bookshelf(Clone)" && furnitureMovement.beenPlaced == false)
+        {
+            foreach(Transform child in currentFurniture.transform.GetChild(0))
+            {
+                BookGiver.Remove(currentFurniture.transform.GetChild(0).gameObject.transform.GetChild(currentChild).gameObject);
+                currentChild++;
+            }
+            Destroy(currentFurniture);
+            bookshelfNumber++;
+            if(bookshelfNumber == 1)
+            {
+                shopCustomizationScript.numberOfChildren++;
+                shopCustomizationScript.CustomizeShopInterface();
+            }
+        }
+        else if(currentFurniture.name == "Table(Clone)" && furnitureMovement.beenPlaced == false)
+        {
+            if(currentFurniture.GetComponent<FurnitureMovement>().CustomerChairAmount.Count > 0)
+            {
+                for(int i = 0; i <= currentFurniture.GetComponent<FurnitureMovement>().CustomerChairAmount.Count; i++)
+                {
+                    Destroy(currentFurniture.GetComponent<FurnitureMovement>().CustomerChairAmount[currentChild]);
+                    i = 0;
+                    chairNumber++;
+                }
+            }
+            Destroy(currentFurniture);
+            tableNumber++;
+            if(tableNumber == 1)
+            {
+                shopCustomizationScript.numberOfChildren++;
+                shopCustomizationScript.CustomizeShopInterface();
+            }
+        }
+        else if(currentFurniture.name == "Chair(Clone)" && furnitureMovement.beenPlaced == false)
+        {
+            Destroy(currentFurniture);
+            chairNumber++;
+            if(chairNumber == 1)
+            {
+                shopCustomizationScript.numberOfChildren++;
+                shopCustomizationScript.CustomizeShopInterface();
+            }
+        }
+        else if(currentFurniture.name == "Desk(Clone)" && furnitureMovement.beenPlaced == false)
+        {
+            if(currentFurniture.GetComponent<FurnitureMovement>().computer != null)
+            {
+                Destroy(currentFurniture.GetComponent<FurnitureMovement>().computer);
+                computerNumber++;
+            }
+
+            if(currentFurniture.GetComponent<FurnitureMovement>().CustomerChairAmount.Count > 0)
+            {
+                for(int i = 0; i <= currentFurniture.GetComponent<FurnitureMovement>().CustomerChairAmount.Count; i++)
+                {
+                    Destroy(currentFurniture.GetComponent<FurnitureMovement>().CustomerChairAmount[currentChild]);
+                    i = 0;
+                    chairNumber++;
+                }
+            }
+
+            if(TableGiver.Contains(currentFurniture))
+            {
+                TableGiver.Remove(currentFurniture);
+            }
+            Destroy(currentFurniture);
+            deskNumber++;
+            if(deskNumber == 1)
+            {
+                shopCustomizationScript.numberOfChildren++;
+                shopCustomizationScript.CustomizeShopInterface();
+            }
+        }
+        else if(currentFurniture.name == "Computer(Clone)" && furnitureMovement.beenPlaced == false)
+        {
+            Destroy(currentFurniture);
+            computerNumber++;
+            if(computerNumber == 1)
+            {
+                shopCustomizationScript.numberOfChildren++;
+                shopCustomizationScript.CustomizeShopInterface();
+            }
+        }
+    }
+
+    void CheckGoldAmount()
+    {
+        goldAmountOnes = goldAmount % 10;
+        goldAmountTens = goldAmount % 100 - goldAmountOnes;
+        goldAmountHundreds = goldAmount % 1000 - goldAmountTens - goldAmountOnes;
+        goldAmountThousands = goldAmount % 10000 - goldAmountHundreds - goldAmountTens - goldAmountOnes;
+
+        if(goldAmountOnes == 0)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountZeroSprite;
+        }
+        else if(goldAmountOnes == 1)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountOneSprite;
+        }
+        else if(goldAmountOnes == 2)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountTwoSprite;
+        }
+        else if(goldAmountOnes == 3)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountThreeSprite;
+        }
+        else if(goldAmountOnes == 4)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFourSprite;
+        }
+        else if(goldAmountOnes == 5)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFiveSprite;
+        }
+        else if(goldAmountOnes == 6)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSixSprite;
+        }
+        else if(goldAmountOnes == 7)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSevenSprite;
+        }
+        else if(goldAmountOnes == 8)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountEightSprite;
+        }
+        else if(goldAmountOnes == 9)
+        {
+            goldAmountOnesSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountNineSprite;
+        }
+
+        if(goldAmountTens == 0)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountZeroSprite;
+        }
+        else if(goldAmountTens == 10)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountOneSprite;
+        }
+        else if(goldAmountTens == 20)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountTwoSprite;
+        }
+        else if(goldAmountTens == 30)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountThreeSprite;
+        }
+        else if(goldAmountTens == 40)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFourSprite;
+        }
+        else if(goldAmountTens == 50)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFiveSprite;
+        }
+        else if(goldAmountTens == 60)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSixSprite;
+        }
+        else if(goldAmountTens == 70)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSevenSprite;
+        }
+        else if(goldAmountTens == 80)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountEightSprite;
+        }
+        else if(goldAmountTens == 90)
+        {
+            goldAmountTensSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountNineSprite;
+        }
+
+        if(goldAmountHundreds == 0)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountZeroSprite;
+        }
+        else if(goldAmountHundreds == 100)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountOneSprite;
+        }
+        else if(goldAmountHundreds == 200)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountTwoSprite;
+        }
+        else if(goldAmountHundreds == 300)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountThreeSprite;
+        }
+        else if(goldAmountHundreds == 400)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFourSprite;
+        }
+        else if(goldAmountHundreds == 500)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFiveSprite;
+        }
+        else if(goldAmountHundreds == 600)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSixSprite;
+        }
+        else if(goldAmountHundreds == 700)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSevenSprite;
+        }
+        else if(goldAmountHundreds == 800)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountEightSprite;
+        }
+        else if(goldAmountHundreds == 900)
+        {
+            goldAmountHundredsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountNineSprite;
+        }
+
+        if(goldAmountThousands == 0)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountZeroSprite;
+        }
+        else if(goldAmountThousands == 1000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountOneSprite;
+        }
+        else if(goldAmountThousands == 2000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountTwoSprite;
+        }
+        else if(goldAmountThousands == 3000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountThreeSprite;
+        }
+        else if(goldAmountThousands == 4000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFourSprite;
+        }
+        else if(goldAmountThousands == 5000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountFiveSprite;
+        }
+        else if(goldAmountThousands == 6000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSixSprite;
+        }
+        else if(goldAmountThousands == 7000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountSevenSprite;
+        }
+        else if(goldAmountThousands == 8000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountEightSprite;
+        }
+        else if(goldAmountThousands == 9000)
+        {
+            goldAmountThousandsSign.GetComponent<SpriteRenderer>().sprite = spriteController.goldAmountNineSprite;
+        }
+    }
+}
