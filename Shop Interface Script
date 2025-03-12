@@ -1,0 +1,1453 @@
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+
+public class ShopInterface : MonoBehaviour
+{
+    GameObject character;
+    GameObject doormat;
+    GameObject objectHit;
+    [SerializeField] GameObject bookshelfShopNumberOnesObject;
+    [SerializeField] GameObject bookshelfShopNumberTensObject;
+    [SerializeField] GameObject tableShopNumberOnesObject;
+    [SerializeField] GameObject tableShopNumberTensObject;
+    [SerializeField] GameObject chairShopNumberOnesObject;
+    [SerializeField] GameObject chairShopNumberTensObject;
+    [SerializeField] GameObject deskShopNumberOnesObject;
+    [SerializeField] GameObject deskShopNumberTensObject;
+    [SerializeField] GameObject computerShopNumberOnesObject;
+    [SerializeField] GameObject computerShopNumberTensObject;
+
+    [SerializeField] GameObject bookshelfShopPriceOnesObject;
+    [SerializeField] GameObject bookshelfShopPriceTensObject;
+    [SerializeField] GameObject bookshelfShopPriceHundredsObject;
+    [SerializeField] GameObject tableShopPriceOnesObject;
+    [SerializeField] GameObject tableShopPriceTensObject;
+    [SerializeField] GameObject tableShopPriceHundredsObject;
+    [SerializeField] GameObject chairShopPriceOnesObject;
+    [SerializeField] GameObject chairShopPriceTensObject;
+    [SerializeField] GameObject chairShopPriceHundredsObject;
+    [SerializeField] GameObject deskShopPriceOnesObject;
+    [SerializeField] GameObject deskShopPriceTensObject;
+    [SerializeField] GameObject deskShopPriceHundredsObject;
+    [SerializeField] GameObject computerShopPriceOnesObject;
+    [SerializeField] GameObject computerShopPriceTensObject;
+    [SerializeField] GameObject computerShopPriceHundredsObject;
+
+    RaycastHit2D hit;
+
+    [SerializeField] CharacterMovement characterMovement;
+    [SerializeField] SceneManagerScript sceneManager;
+    [SerializeField] ShopCustomizationScript shopCustomizationScript;
+    [SerializeField] SpriteController spriteController;
+
+    int bookshelfShopNumber = 1;
+    int bookshelfShopNumberOnes = 1;
+    int bookshelfShopNumberTens;
+    int tableShopNumber = 1;
+    int tableShopNumberOnes = 1;
+    int tableShopNumberTens;
+    int chairShopNumber = 1;
+    int chairShopNumberOnes = 1;
+    int chairShopNumberTens;
+    int deskShopNumber = 1;
+    int deskShopNumberOnes = 1;
+    int deskShopNumberTens;
+    int computerShopNumber = 1;
+    int computerShopNumberOnes = 1;
+    int computerShopNumberTens;
+
+    int bookshelfShopPrice;
+    int bookshelfShopPriceOnes;
+    int bookshelfShopPriceTens;
+    int bookshelfShopPriceHundreds;
+    int tableShopPrice;
+    int tableShopPriceOnes;
+    int tableShopPriceTens;
+    int tableShopPriceHundreds;
+    int chairShopPrice;
+    int chairShopPriceOnes;
+    int chairShopPriceTens;
+    int chairShopPriceHundreds;
+    int deskShopPrice;
+    int deskShopPriceOnes;
+    int deskShopPriceTens;
+    int deskShopPriceHundreds;
+    int computerShopPrice;
+    int computerShopPriceOnes;
+    int computerShopPriceTens;
+    int computerShopPriceHundreds;
+
+    void Start()
+    {
+        character = GameObject.Find("Character");
+        doormat = GameObject.Find("Doormat");
+        SetShopPrices();
+    }
+
+    void Update()
+    {
+        if(Input.GetMouseButtonDown(0))
+        {
+            RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
+
+            if(hit.collider != null)
+            {
+                objectHit = hit.collider.gameObject;
+                BuyItemFromShop();
+            }
+        }
+    }
+
+    void BuyItemFromShop()
+    {
+        if(objectHit.name == "Close Shop Bookmark")
+        {
+            character.GetComponent<Collider2D>().enabled = true;
+            characterMovement.cantMove = false;
+            character.transform.position = doormat.transform.position;
+            character.GetComponent<SpriteRenderer>().enabled = true;
+            characterMovement.beenShopping = true;
+            sceneManager.shopSign.transform.position = new Vector2(sceneManager.shopSign.transform.position.x, sceneManager.shopSign.transform.position.y - 5);
+            sceneManager.currentFurniture = null;
+            ResetShopNumbers();
+            SetShopPrices();
+        }
+
+        if(objectHit.name == "First Buy Button" && sceneManager.goldAmount >= 5)
+        {
+            sceneManager.goldAmount -= bookshelfShopNumber * 10;
+            sceneManager.bookshelfNumber += bookshelfShopNumber;
+        }
+        else if(objectHit.name == "First Sell Button" && sceneManager.bookshelfNumber >= bookshelfShopNumber)
+        {
+            sceneManager.goldAmount += bookshelfShopNumber * 10;
+            sceneManager.bookshelfNumber -= bookshelfShopNumber;
+        }
+        else if(objectHit.name == "First Increase Arrow")
+        {
+            if(bookshelfShopNumberOnes < 9)
+            {
+                bookshelfShopNumber++;
+                bookshelfShopNumberOnes++;
+            }
+            else if(bookshelfShopNumberOnes == 9 && bookshelfShopNumberTens < 9)
+            {
+                bookshelfShopNumber++;
+                bookshelfShopNumberTens++;
+                bookshelfShopNumberOnes = 0;
+            }
+            bookshelfShopPrice = bookshelfShopNumber * 10;
+            bookshelfShopPriceOnes = bookshelfShopPrice % 10;
+            bookshelfShopPriceTens = (bookshelfShopPrice % 100) / 10;
+            bookshelfShopPriceHundreds = (bookshelfShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+        else if(objectHit.name == "First Decrease Arrow")
+        {
+            if(bookshelfShopNumberOnes >= 1 && bookshelfShopNumber > 1)
+            {
+                bookshelfShopNumber--;
+                bookshelfShopNumberOnes--;
+            }
+            else if(bookshelfShopNumberOnes == 0)
+            {
+                bookshelfShopNumber--;
+                bookshelfShopNumberTens --;
+                bookshelfShopNumberOnes = 9;
+            }
+            bookshelfShopPrice = bookshelfShopNumber * 10;
+            bookshelfShopPriceOnes = bookshelfShopPrice % 10;
+            bookshelfShopPriceTens = (bookshelfShopPrice % 100) / 10;
+            bookshelfShopPriceHundreds = (bookshelfShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+
+        if(objectHit.name == "Second Buy Button" && sceneManager.goldAmount >= 5)
+        {
+            sceneManager.goldAmount -= tableShopNumber * 5;
+            sceneManager.tableNumber += tableShopNumber;
+        }
+        else if(objectHit.name == "Second Sell Button" && sceneManager.tableNumber >= tableShopNumber)
+        {
+            sceneManager.goldAmount += tableShopNumber * 5;
+            sceneManager.tableNumber -= tableShopNumber;
+        }
+        else if(objectHit.name == "Second Increase Arrow")
+        {
+            if(tableShopNumberOnes < 9)
+            {
+                tableShopNumber++;
+                tableShopNumberOnes++;
+            }
+            else if(tableShopNumberOnes == 9 && tableShopNumberTens < 9)
+            {
+                tableShopNumber++;
+                tableShopNumberTens++;
+                tableShopNumberOnes = 0;
+            }
+            tableShopPrice = tableShopNumber * 5;
+            tableShopPriceOnes = tableShopPrice % 10;
+            tableShopPriceTens = (tableShopPrice % 100) / 10;
+            tableShopPriceHundreds = (tableShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+        else if(objectHit.name == "Second Decrease Arrow")
+        {
+            if(tableShopNumberOnes >= 1 && tableShopNumber > 1)
+            {
+                tableShopNumber--;
+                tableShopNumberOnes--;
+            }
+            else if(tableShopNumberOnes == 0)
+            {
+                tableShopNumber--;
+                tableShopNumberTens --;
+                tableShopNumberOnes = 9;
+            }
+            tableShopPrice = tableShopNumber * 5;
+            tableShopPriceOnes = tableShopPrice % 10;
+            tableShopPriceTens = (tableShopPrice % 100) / 10;
+            tableShopPriceHundreds = (tableShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+
+        if(objectHit.name == "Third Buy Button" && sceneManager.goldAmount >= 5)
+        {
+            sceneManager.goldAmount -= chairShopNumber * 5;
+            sceneManager.chairNumber += chairShopNumber;
+        }
+        else if(objectHit.name == "Third Sell Button" && sceneManager.chairNumber >= chairShopNumber)
+        {
+            sceneManager.goldAmount += chairShopNumber * 5;
+            sceneManager.chairNumber -= chairShopNumber;
+        }
+        else if(objectHit.name == "Third Increase Arrow")
+        {
+            if(chairShopNumberOnes < 9)
+            {
+                chairShopNumber++;
+                chairShopNumberOnes++;
+            }
+            else if(chairShopNumberOnes == 9 && chairShopNumberTens < 9)
+            {
+                chairShopNumber++;
+                chairShopNumberTens++;
+                chairShopNumberOnes = 0;
+            }
+            chairShopPrice = chairShopNumber * 5;
+            chairShopPriceOnes = chairShopPrice % 10;
+            chairShopPriceTens = (chairShopPrice % 100) / 10;
+            chairShopPriceHundreds = (chairShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+        else if(objectHit.name == "Third Decrease Arrow")
+        {
+            if(chairShopNumberOnes >= 1 && chairShopNumber > 1)
+            {
+                chairShopNumber--;
+                chairShopNumberOnes--;
+            }
+            else if(chairShopNumberOnes == 0)
+            {
+                chairShopNumber--;
+                chairShopNumberTens --;
+                chairShopNumberOnes = 9;
+            }
+            chairShopPrice = chairShopNumber * 5;
+            chairShopPriceOnes = chairShopPrice % 10;
+            chairShopPriceTens = (chairShopPrice % 100) / 10;
+            chairShopPriceHundreds = (chairShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+
+        if(objectHit.name == "Fourth Buy Button" && sceneManager.goldAmount >= 5)
+        {
+            sceneManager.goldAmount -= deskShopNumber * 5;
+            sceneManager.deskNumber += deskShopNumber;
+        }
+        else if(objectHit.name == "Fourth Sell Button" && sceneManager.deskNumber >= deskShopNumber)
+        {
+            sceneManager.goldAmount += deskShopNumber;
+            sceneManager.deskNumber -= deskShopNumber;
+        }
+        else if(objectHit.name == "Fourth Increase Arrow")
+        {
+            if(deskShopNumberOnes < 9)
+            {
+                deskShopNumber++;
+                deskShopNumberOnes++;
+            }
+            else if(deskShopNumberOnes == 9 && deskShopNumberTens < 9)
+            {
+                deskShopNumber++;
+                deskShopNumberTens++;
+                deskShopNumberOnes = 0;
+            }
+            deskShopPrice = deskShopNumber * 5;
+            deskShopPriceOnes = deskShopPrice % 10;
+            deskShopPriceTens = (deskShopPrice % 100) / 10;
+            deskShopPriceHundreds = (deskShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+        else if(objectHit.name == "Fourth Decrease Arrow")
+        {
+            if(deskShopNumberOnes >= 1 && deskShopNumber > 1)
+            {
+                deskShopNumber--;
+                deskShopNumberOnes--;
+            }
+            else if(deskShopNumberOnes == 0)
+            {
+                deskShopNumber--;
+                deskShopNumberTens --;
+                deskShopNumberOnes = 9;
+            }
+            deskShopPrice = deskShopNumber * 5;
+            deskShopPriceOnes = deskShopPrice % 10;
+            deskShopPriceTens = (deskShopPrice % 100) / 10;
+            deskShopPriceHundreds = (deskShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+
+        if(objectHit.name == "Fifth Buy Button" && sceneManager.goldAmount >= 5)
+        {
+            sceneManager.goldAmount -= computerShopNumber * 10;
+            sceneManager.computerNumber += computerShopNumber;
+        }
+        else if(objectHit.name == "Fifth Sell Button" && sceneManager.computerNumber >= computerShopNumber)
+        {
+            sceneManager.goldAmount += computerShopNumber;
+            sceneManager.computerNumber -= computerShopNumber;
+        }
+        else if(objectHit.name == "Fifth Increase Arrow")
+        {
+            if(computerShopNumberOnes < 9)
+            {
+                computerShopNumber++;
+                computerShopNumberOnes++;
+            }
+            else if(computerShopNumberOnes == 9 && computerShopNumberTens < 9)
+            {
+                computerShopNumber++;
+                computerShopNumberTens++;
+                computerShopNumberOnes = 0;
+            }
+            computerShopPrice = computerShopNumber * 10;
+            computerShopPriceOnes = computerShopPrice % 10;
+            computerShopPriceTens = (computerShopPrice % 100) / 10;
+            computerShopPriceHundreds = (computerShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+        else if(objectHit.name == "Fifth Decrease Arrow")
+        {
+            if(computerShopNumberOnes >= 1 && computerShopNumber > 1)
+            {
+                computerShopNumber--;
+                computerShopNumberOnes--;
+            }
+            else if(computerShopNumberOnes == 0)
+            {
+                computerShopNumber--;
+                computerShopNumberTens --;
+                computerShopNumberOnes = 9;
+            }
+            computerShopPrice = computerShopNumber * 10;
+            computerShopPriceOnes = computerShopPrice % 10;
+            computerShopPriceTens = (computerShopPrice % 100) / 10;
+            computerShopPriceHundreds = (computerShopPrice % 1000) / 100;
+            CheckShopNumberSprite();
+        }
+
+        if(objectHit.name == "Customize Shop Sticky")
+        {
+            shopCustomizationScript.spawnedItemBoxHolder = false;
+            sceneManager.customizingShop = true;
+            characterMovement.beenShopping = true;
+            characterMovement.cantMove = false;
+            shopCustomizationScript.CustomizeShopInterface();
+            character.transform.position = GameObject.Find("Scene Manager").transform.position;
+            ResetShopNumbers();
+            SetShopPrices();
+        }
+    }
+
+    void SetShopPrices()
+    {
+        bookshelfShopPrice = bookshelfShopNumber * 10;
+        bookshelfShopPriceOnes = bookshelfShopPrice % 10;
+        bookshelfShopPriceTens = (bookshelfShopPrice % 100) / 10;
+        bookshelfShopPriceHundreds = (bookshelfShopPrice % 1000) / 100;
+
+        tableShopPrice = tableShopNumber * 5;
+        tableShopPriceOnes = tableShopPrice % 10;
+        tableShopPriceTens = (tableShopPrice % 100) / 10;
+        tableShopPriceHundreds = (tableShopPrice % 1000) / 100;
+                    
+        chairShopPrice = chairShopNumber * 5;
+        chairShopPriceOnes = chairShopPrice % 10;
+        chairShopPriceTens = (chairShopPrice % 100) / 10;
+        chairShopPriceHundreds = (chairShopPrice % 1000) / 100;
+
+        deskShopPrice = deskShopNumber * 5;
+        deskShopPriceOnes = deskShopPrice % 10;
+        deskShopPriceTens = (deskShopPrice % 100) / 10;
+        deskShopPriceHundreds = (deskShopPrice % 1000) / 100;
+
+        computerShopPrice = computerShopNumber * 10;
+        computerShopPriceOnes = computerShopPrice % 10;
+        computerShopPriceTens = (computerShopPrice % 100) / 10;
+        computerShopPriceHundreds = (computerShopPrice % 1000) / 100;
+
+        CheckShopNumberSprite();
+    }
+
+    void ResetShopNumbers()
+    {
+        bookshelfShopNumber = 1;
+        bookshelfShopNumberOnes = 1;
+        bookshelfShopNumberTens = 0;
+        tableShopNumber = 1;
+        tableShopNumberOnes = 1;
+        tableShopNumberTens = 0;
+        chairShopNumber = 1;
+        chairShopNumberOnes = 1;
+        chairShopNumberTens = 0;
+        deskShopNumber = 1;
+        deskShopNumberOnes = 1;
+        deskShopNumberTens = 0;
+        computerShopNumber = 1;
+        computerShopNumberOnes = 1;
+        computerShopNumberTens = 0;
+        CheckShopNumberSprite();
+    }
+
+    void CheckShopNumberSprite()
+    {
+        if(bookshelfShopNumberOnes == 0)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(bookshelfShopNumberOnes == 1)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(bookshelfShopNumberOnes == 2)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(bookshelfShopNumberOnes == 3)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(bookshelfShopNumberOnes == 4)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(bookshelfShopNumberOnes == 5)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(bookshelfShopNumberOnes == 6)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(bookshelfShopNumberOnes == 7)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(bookshelfShopNumberOnes == 8)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(bookshelfShopNumberOnes == 9)
+        {
+            bookshelfShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(bookshelfShopNumberTens == 0)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(bookshelfShopNumberTens == 1)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(bookshelfShopNumberTens == 2)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(bookshelfShopNumberTens == 3)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(bookshelfShopNumberTens == 4)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(bookshelfShopNumberTens == 5)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(bookshelfShopNumberTens == 6)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(bookshelfShopNumberTens == 7)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(bookshelfShopNumberTens == 8)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(bookshelfShopNumberTens == 9)
+        {
+            bookshelfShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(tableShopNumberOnes == 0)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(tableShopNumberOnes == 1)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(tableShopNumberOnes == 2)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(tableShopNumberOnes == 3)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(tableShopNumberOnes == 4)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(tableShopNumberOnes == 5)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(tableShopNumberOnes == 6)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(tableShopNumberOnes == 7)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(tableShopNumberOnes == 8)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(tableShopNumberOnes == 9)
+        {
+            tableShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(tableShopNumberTens == 0)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(tableShopNumberTens == 1)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(tableShopNumberTens == 2)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(tableShopNumberTens == 3)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(tableShopNumberTens == 4)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(tableShopNumberTens == 5)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(tableShopNumberTens == 6)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(tableShopNumberTens == 7)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(tableShopNumberTens == 8)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(tableShopNumberTens == 9)
+        {
+            tableShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(chairShopNumberOnes == 0)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(chairShopNumberOnes == 1)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(chairShopNumberOnes == 2)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(chairShopNumberOnes == 3)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(chairShopNumberOnes == 4)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(chairShopNumberOnes == 5)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(chairShopNumberOnes == 6)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(chairShopNumberOnes == 7)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(chairShopNumberOnes == 8)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(chairShopNumberOnes == 9)
+        {
+            chairShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(chairShopNumberTens == 0)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(chairShopNumberTens == 1)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(chairShopNumberTens == 2)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(chairShopNumberTens == 3)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(chairShopNumberTens == 4)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(chairShopNumberTens == 5)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(chairShopNumberTens == 6)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(chairShopNumberTens == 7)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(chairShopNumberTens == 8)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(chairShopNumberTens == 9)
+        {
+            chairShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(deskShopNumberOnes == 0)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(deskShopNumberOnes == 1)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(deskShopNumberOnes == 2)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(deskShopNumberOnes == 3)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(deskShopNumberOnes == 4)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(deskShopNumberOnes == 5)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(deskShopNumberOnes == 6)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(deskShopNumberOnes == 7)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(deskShopNumberOnes == 8)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(deskShopNumberOnes == 9)
+        {
+            deskShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(deskShopNumberTens == 0)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(deskShopNumberTens == 1)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(deskShopNumberTens == 2)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(deskShopNumberTens == 3)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(deskShopNumberTens == 4)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(deskShopNumberTens == 5)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(deskShopNumberTens == 6)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(deskShopNumberTens == 7)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(deskShopNumberTens == 8)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(deskShopNumberTens == 9)
+        {
+            deskShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(computerShopNumberOnes == 0)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(computerShopNumberOnes == 1)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(computerShopNumberOnes == 2)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(computerShopNumberOnes == 3)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(computerShopNumberOnes == 4)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(computerShopNumberOnes == 5)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(computerShopNumberOnes == 6)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(computerShopNumberOnes == 7)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(computerShopNumberOnes == 8)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(computerShopNumberOnes == 9)
+        {
+            computerShopNumberOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(computerShopNumberTens == 0)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(computerShopNumberTens == 1)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if(computerShopNumberTens == 2)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(computerShopNumberTens == 3)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(computerShopNumberTens == 4)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if(computerShopNumberTens == 5)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(computerShopNumberTens == 6)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(computerShopNumberTens == 7)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if(computerShopNumberTens == 8)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(computerShopNumberTens == 9)
+        {
+            computerShopNumberTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(bookshelfShopPriceOnes == 0)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(bookshelfShopPriceOnes == 1)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (bookshelfShopPriceOnes == 2)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(bookshelfShopPriceOnes == 3)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(bookshelfShopPriceOnes == 4)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (bookshelfShopPriceOnes == 5)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(bookshelfShopPriceOnes == 6)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(bookshelfShopPriceOnes == 7)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (bookshelfShopPriceOnes == 8)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(bookshelfShopPriceOnes == 9)
+        {
+            bookshelfShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(bookshelfShopPriceTens == 0)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(bookshelfShopPriceTens == 1)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (bookshelfShopPriceTens == 2)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(bookshelfShopPriceTens == 3)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(bookshelfShopPriceTens == 4)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (bookshelfShopPriceTens == 5)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(bookshelfShopPriceTens == 6)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(bookshelfShopPriceTens == 7)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (bookshelfShopPriceTens == 8)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(bookshelfShopPriceTens == 9)
+        {
+            bookshelfShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(bookshelfShopPriceHundreds == 0)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(bookshelfShopPriceHundreds == 1)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (bookshelfShopPriceHundreds == 2)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(bookshelfShopPriceHundreds == 3)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(bookshelfShopPriceHundreds == 4)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (bookshelfShopPriceHundreds == 5)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(bookshelfShopPriceHundreds == 6)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(bookshelfShopPriceHundreds == 7)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (bookshelfShopPriceHundreds == 8)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(bookshelfShopPriceHundreds == 9)
+        {
+            bookshelfShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(tableShopPriceOnes == 0)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(tableShopPriceOnes == 1)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (tableShopPriceOnes == 2)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(tableShopPriceOnes == 3)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(tableShopPriceOnes == 4)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (tableShopPriceOnes == 5)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(tableShopPriceOnes == 6)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(tableShopPriceOnes == 7)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (tableShopPriceOnes == 8)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(tableShopPriceOnes == 9)
+        {
+            tableShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(tableShopPriceTens == 0)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(tableShopPriceTens == 1)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (tableShopPriceTens == 2)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(tableShopPriceTens == 3)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(tableShopPriceTens == 4)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (tableShopPriceTens == 5)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(tableShopPriceTens == 6)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(tableShopPriceTens == 7)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (tableShopPriceTens == 8)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(tableShopPriceTens == 9)
+        {
+            tableShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(tableShopPriceHundreds == 0)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(tableShopPriceHundreds == 1)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (tableShopPriceHundreds == 2)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(tableShopPriceHundreds == 3)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(tableShopPriceHundreds == 4)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (tableShopPriceHundreds == 5)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(tableShopPriceHundreds == 6)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(tableShopPriceHundreds == 7)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (tableShopPriceHundreds == 8)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(tableShopPriceHundreds == 9)
+        {
+            tableShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(chairShopPriceOnes == 0)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(chairShopPriceOnes == 1)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (chairShopPriceOnes == 2)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(chairShopPriceOnes == 3)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(chairShopPriceOnes == 4)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (chairShopPriceOnes == 5)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(chairShopPriceOnes == 6)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(chairShopPriceOnes == 7)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (chairShopPriceOnes == 8)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(chairShopPriceOnes == 9)
+        {
+            chairShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(chairShopPriceTens == 0)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(chairShopPriceTens == 1)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (chairShopPriceTens == 2)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(chairShopPriceTens == 3)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(chairShopPriceTens == 4)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (chairShopPriceTens == 5)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(chairShopPriceTens == 6)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(chairShopPriceTens == 7)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (chairShopPriceTens == 8)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(chairShopPriceTens == 9)
+        {
+            chairShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(chairShopPriceHundreds == 0)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(chairShopPriceHundreds == 1)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (chairShopPriceHundreds == 2)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(chairShopPriceHundreds == 3)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(chairShopPriceHundreds == 4)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (chairShopPriceHundreds == 5)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(chairShopPriceHundreds == 6)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(chairShopPriceHundreds == 7)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (chairShopPriceHundreds == 8)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(chairShopPriceHundreds == 9)
+        {
+            chairShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(deskShopPriceOnes == 0)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(deskShopPriceOnes == 1)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (deskShopPriceOnes == 2)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(deskShopPriceOnes == 3)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(deskShopPriceOnes == 4)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (deskShopPriceOnes == 5)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(deskShopPriceOnes == 6)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(deskShopPriceOnes == 7)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (deskShopPriceOnes == 8)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(deskShopPriceOnes == 9)
+        {
+            deskShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(deskShopPriceTens == 0)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(deskShopPriceTens == 1)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (deskShopPriceTens == 2)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(deskShopPriceTens == 3)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(deskShopPriceTens == 4)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (deskShopPriceTens == 5)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(deskShopPriceTens == 6)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(deskShopPriceTens == 7)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (deskShopPriceTens == 8)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(deskShopPriceTens == 9)
+        {
+            deskShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(deskShopPriceHundreds == 0)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(deskShopPriceHundreds == 1)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (deskShopPriceHundreds == 2)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(deskShopPriceHundreds == 3)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(deskShopPriceHundreds == 4)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (deskShopPriceHundreds == 5)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(deskShopPriceHundreds == 6)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(deskShopPriceHundreds == 7)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (deskShopPriceHundreds == 8)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(deskShopPriceHundreds == 9)
+        {
+            deskShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(computerShopPriceOnes == 0)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(computerShopPriceOnes == 1)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (computerShopPriceOnes == 2)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(computerShopPriceOnes == 3)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(computerShopPriceOnes == 4)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (computerShopPriceOnes == 5)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(computerShopPriceOnes == 6)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(computerShopPriceOnes == 7)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (computerShopPriceOnes == 8)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(computerShopPriceOnes == 9)
+        {
+            computerShopPriceOnesObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(computerShopPriceTens == 0)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(computerShopPriceTens == 1)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (computerShopPriceTens == 2)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(computerShopPriceTens == 3)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(computerShopPriceTens == 4)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (computerShopPriceTens == 5)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(computerShopPriceTens == 6)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(computerShopPriceTens == 7)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (computerShopPriceTens == 8)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(computerShopPriceTens == 9)
+        {
+            computerShopPriceTensObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+
+        if(computerShopPriceHundreds == 0)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberZero;
+        }
+        else if(computerShopPriceHundreds == 1)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberOne;
+        }
+        else if (computerShopPriceHundreds == 2)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberTwo;
+        }
+        else if(computerShopPriceHundreds == 3)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberThree;
+        }
+        else if(computerShopPriceHundreds == 4)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFour;
+        }
+        else if (computerShopPriceHundreds == 5)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberFive;
+        }
+        else if(computerShopPriceHundreds == 6)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSix;
+        }
+        else if(computerShopPriceHundreds == 7)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberSeven;
+        }
+        else if (computerShopPriceHundreds == 8)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberEight;
+        }
+        else if(computerShopPriceHundreds == 9)
+        {
+            computerShopPriceHundredsObject.GetComponent<SpriteRenderer>().sprite = spriteController.shopNumberNine;
+        }
+    }
+}
