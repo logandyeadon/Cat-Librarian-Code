@@ -1,0 +1,183 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CharacterMovement : MonoBehaviour
+{
+    int pickBookshelf;
+
+    bool readyToCheckout;
+    bool minigameComplete;
+    public bool beenShopping;
+    public bool cantMove;
+    public bool tryCheckout;
+    bool bookReturnMinigame;
+
+    Vector2 speed = new Vector2(3,3);
+
+    GameObject currentTable;
+    GameObject bookReturn;
+    GameObject tempBookReturnArrow;
+    GameObject tempBookReturnBook;
+    [SerializeField] GameObject bookReturnArrow;
+    [SerializeField] GameObject mCamera;
+    
+    Transform bookReplaceBookshelf;
+    [SerializeField] Transform shopInterfacePosition;
+
+    [SerializeField] SceneManagerScript sceneManager;
+    [SerializeField] ShopInterface shopInterface;
+
+    void Update()
+    {
+        if(cantMove == false)
+        {
+            float inputX = Input.GetAxis("Horizontal");
+            float inputY = Input.GetAxis("Vertical");
+
+            Vector2 movement = new Vector2(speed.x * inputX, speed.y * inputY);
+
+            movement *= Time.deltaTime;
+
+            transform.Translate(movement);
+        }
+
+        mCamera.transform.position = new Vector3(transform.position.x, transform.position.y, -10);
+
+        if(readyToCheckout == true && Input.GetKey("e"))
+        {
+            tryCheckout = true;
+        }
+        else
+        {
+            tryCheckout = false;
+        }
+
+        if(sceneManager.customizingShop == true && Input.GetKeyDown("f"))
+        {
+            sceneManager.customizingShop = false;
+            cantMove = true;
+            transform.position = shopInterfacePosition.position;
+            gameObject.GetComponent<SpriteRenderer>().enabled = false;
+        }
+    }
+
+    void PutBookAwayMinigame()
+    {
+        if(minigameComplete == false)
+        {
+            bookReturnMinigame = true;
+            bookReturn.GetComponent<FurnitureMovement>().bookReturnNumber--;
+            pickBookshelf = Random.Range(0,sceneManager.BookGiver.Count);
+            bookReplaceBookshelf = sceneManager.BookGiver[pickBookshelf].transform.parent.transform.parent;
+            bookReplaceBookshelf.GetComponent<FurnitureMovement>().putBackBookshelf = true;
+            tempBookReturnArrow = Instantiate(bookReturnArrow, new Vector2(bookReplaceBookshelf.position.x, bookReplaceBookshelf.position.y + 1.25f), Quaternion.identity);
+            if(bookReturn.GetComponent<FurnitureMovement>().spriteNumber == 1 && bookReturn.GetComponent<FurnitureMovement>().bookReturnNumber == 0)
+            {
+                bookReturn.GetComponent<FurnitureMovement>().spriteNumber = 0;
+            }
+            else if(bookReturn.GetComponent<FurnitureMovement>().spriteNumber == 3 && bookReturn.GetComponent<FurnitureMovement>().bookReturnNumber == 0)
+            {
+                bookReturn.GetComponent<FurnitureMovement>().spriteNumber = 2;
+            }
+            else if(bookReturn.GetComponent<FurnitureMovement>().spriteNumber == 4 && bookReturn.GetComponent<FurnitureMovement>().bookReturnNumber == 5)
+            {
+                bookReturn.GetComponent<FurnitureMovement>().spriteNumber = 3;
+            }
+            bookReturn.GetComponent<FurnitureMovement>().FurnitureSpriteManager();
+        }
+        else
+        {
+            cantMove = false;
+            Destroy(tempBookReturnArrow);
+            bookReplaceBookshelf.GetComponent<FurnitureMovement>().putBackBookshelf = false;
+            bookReturnMinigame = false;
+            bookReturn = null;
+        }
+    }
+
+    void CleaningTableMinigame()
+    {
+        if(minigameComplete == false)
+        {
+            StartCoroutine(MinigameTimer(0.5f));
+            cantMove = true;
+        }
+        else if(minigameComplete == true && currentTable != null)
+        {
+            cantMove = false;
+            currentTable.GetComponent<FurnitureMovement>().tableDirty = false;
+            currentTable.GetComponent<FurnitureMovement>().spriteNumber = 0;
+            currentTable.GetComponent<FurnitureMovement>().FurnitureSpriteManager();
+            sceneManager.TableGiver.Add(currentTable);
+            currentTable = null;
+        }
+    }
+
+    IEnumerator MinigameTimer(float waitTime)
+    {
+        minigameComplete = true;
+        yield return new WaitForSeconds(waitTime);
+        if(currentTable != null)
+        {
+            CleaningTableMinigame();
+        }
+        if(bookReturn != null)
+        {
+            PutBookAwayMinigame();
+        }
+    }
+
+    void OnCollisionStay2D(Collision2D col)
+    {
+        if(col.gameObject.name == "Doormat" && sceneManager.storeOpen == false && beenShopping == false)
+        {
+            GetComponent<Collider2D>().enabled = false;
+            cantMove = true;
+            transform.position = new Vector2(shopInterfacePosition.position.x, shopInterfacePosition.position.y);
+            gameObject.GetComponent<SpriteRenderer>().enabled = false;
+            sceneManager.shopSign.transform.position = new Vector2(sceneManager.shopSign.transform.position.x, sceneManager.shopSign.transform.position.y + 5);
+        }
+
+        if(col.gameObject.name == "Book Return Collider" && col.gameObject.transform.parent.gameObject.transform.parent.GetComponent<FurnitureMovement>().bookReturnNumber > 0 && Input.GetKey("e") && bookReturnMinigame == false)
+        {
+            minigameComplete = false;
+            bookReturn = col.gameObject.transform.parent.transform.parent.gameObject;
+            PutBookAwayMinigame();
+        }
+
+        if(col.gameObject.name == "Bookshelf(Clone)" && col.gameObject.GetComponent<FurnitureMovement>().putBackBookshelf == true && Input.GetKey("e"))
+        {
+            cantMove = true;
+            StartCoroutine(MinigameTimer(0.5f));
+        }
+
+        if(col.gameObject.name == "Table(Clone)" || col.gameObject.name == "Desk(Clone)")
+        {
+            if(col.gameObject.GetComponent<FurnitureMovement>().tableDirty == true && Input.GetKey("e") && bookReturnMinigame == false)
+            {
+                minigameComplete = false;
+                CleaningTableMinigame();
+                currentTable = col.gameObject;
+            }
+        }
+
+        if(col.gameObject.name == "Player Checkout")
+        {
+            readyToCheckout = true;
+        }
+    }
+
+    void OnCollisionExit2D(Collision2D col)
+    {
+        if(col.gameObject.name == "Doormat" && sceneManager.customizingShop == false)
+        {
+            beenShopping = false;
+        }
+
+        if(col.gameObject.name == "Player Checkout")
+        {
+            readyToCheckout = false;
+        }
+    }
+}
