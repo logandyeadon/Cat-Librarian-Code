@@ -1,0 +1,724 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FurnitureMovement : MonoBehaviour
+{
+    int childNumber;
+    public int spriteNumber;
+    public int bookReturnNumber;
+
+    public bool computerPlaced;
+    public bool bookReturnOccupied;
+    public bool beenPlaced;
+    public bool cantPlace;
+    public bool beenTried;
+    public bool tableDirty;
+    public bool putBackBookshelf;
+    public bool collidingWithDestroyButton;
+    bool snapToDesk;
+    bool incorrectlyPlaced;
+
+    public GameObject chairSpotOne;
+    public GameObject chairSpotTwo;
+    public GameObject chairSpotThree;
+    public GameObject chairSpotFour;
+    public GameObject chairSpot;
+    public GameObject computer;
+    GameObject table;
+
+    Vector2 mousePos;
+    Vector2 worldPosition;
+
+    SpriteRenderer objSpriteRenderer;
+    SpriteController spriteController;
+    SceneManagerScript sceneManager;
+    public ShopCustomizationScript shopCustomizationScript;
+    
+    public List<GameObject> CustomerChairAmount = new List<GameObject>();
+
+    void Awake()
+    {
+        spriteController = FindObjectOfType<SpriteController>();
+        sceneManager = FindObjectOfType<SceneManagerScript>();
+        shopCustomizationScript = FindObjectOfType<ShopCustomizationScript>();
+        objSpriteRenderer = gameObject.GetComponent<SpriteRenderer>();
+
+        if(gameObject.name == "Bookshelf(Clone)")
+        {
+            sceneManager.BookGiver.Add(transform.GetChild(0).GetChild(0).gameObject);
+            sceneManager.BookGiver.Add(transform.GetChild(0).GetChild(1).gameObject);
+        }
+
+        if(gameObject.name == "Table(Clone)")
+        {
+            foreach(Transform child in transform)
+            {
+                if(gameObject.transform.GetChild(childNumber) == gameObject.transform.GetChild(0))
+                {
+                    chairSpotOne = gameObject.transform.GetChild(childNumber).gameObject;
+                }
+                else if(gameObject.transform.GetChild(childNumber) == gameObject.transform.GetChild(1))
+                {
+                    chairSpotTwo = gameObject.transform.GetChild(childNumber).gameObject;
+                }
+                else if(gameObject.transform.GetChild(childNumber) == gameObject.transform.GetChild(2))
+                {
+                    chairSpotThree = gameObject.transform.GetChild(childNumber).gameObject;
+                }
+                else if(gameObject.transform.GetChild(childNumber) == gameObject.transform.GetChild(3))
+                {
+                    chairSpotFour = gameObject.transform.GetChild(childNumber).gameObject;
+                }
+                childNumber++;
+            }
+        }
+    }
+
+    void Update()
+    {
+        if(beenPlaced == false)
+        {
+            FurnitureHandlings();
+        }
+
+        if(table != null && table.gameObject.name == "Desk(Clone)" && gameObject.name == "Chair(Clone)" && table.GetComponent<FurnitureMovement>().beenPlaced == false)
+        {
+            gameObject.transform.position = table.transform.GetChild(0).gameObject.transform.GetChild(0).gameObject.transform.position;
+            CheckSpotPosition();
+        }
+    }
+
+    void FurnitureHandlings()
+    {
+        Vector2 mousePos = Input.mousePosition;
+        worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
+        worldPosition = new Vector2(Mathf.Round(worldPosition.x), Mathf.Round(worldPosition.y));
+
+        if(snapToDesk == false)
+        {
+            transform.position = worldPosition;
+        }
+        else if(snapToDesk == true)
+        {
+            transform.position = table.transform.GetChild(1).gameObject.transform.position;
+
+            if(worldPosition.x > table.transform.position.x + 1 || worldPosition.x < table.transform.position.x - 1 || worldPosition.y > table.transform.position.y + 1 || worldPosition.y < table.transform.position.y - 1)
+            {
+                snapToDesk = false;
+            }
+        }
+
+        if(gameObject.name == "Desk(Clone)" && computerPlaced == true)
+        {
+            computer.transform.position = gameObject.transform.GetChild(1).transform.position;
+        }
+        
+        if(gameObject.name == "Table(Clone)" && CustomerChairAmount.Count > 0)
+        {
+            int i = 0;
+            foreach(GameObject gameObject in CustomerChairAmount)
+            {
+                CustomerChairAmount[i].transform.position = CustomerChairAmount[i].GetComponent<FurnitureMovement>().chairSpot.transform.position;
+                i++;
+            }
+
+            if(Input.GetMouseButtonDown(1))
+            {
+                childNumber = 0;
+                foreach(GameObject gameObject in CustomerChairAmount)
+                {
+                    if(CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot == chairSpotOne)
+                    {
+                        CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot = chairSpotTwo;
+                    }
+                    else if(CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot == chairSpotTwo)
+                    {
+                        CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot = chairSpotThree;
+                    }
+                    else if(CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot == chairSpotThree)
+                    {
+                        CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot = chairSpotFour;
+                    }
+                    else if(CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot == chairSpotFour)
+                    {
+                        CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().chairSpot = chairSpotOne;
+                    }
+                    CustomerChairAmount[childNumber].GetComponent<FurnitureMovement>().incorrectlyPlaced = true;
+                    childNumber++;
+                }
+            }
+        }
+
+        if(gameObject.name == "Computer(Clone)" && table != null)
+        {
+            if(table.GetComponent<FurnitureMovement>().spriteNumber != spriteNumber)
+            {
+                incorrectlyPlaced = true;
+            }
+            else
+            {
+                incorrectlyPlaced = false;
+            }
+
+            if(incorrectlyPlaced == true)
+            {
+                cantPlace = true;
+            }
+            else
+            {
+                cantPlace = false;
+            }
+        }
+
+        if(Input.GetMouseButtonDown(1) && gameObject.name != "Table(Clone)")
+        {
+            if(gameObject.name == "Book Return")
+            {
+                if(spriteNumber == 0)
+                {
+                    spriteNumber = 2;
+                }
+                else if(spriteNumber == 2)
+                {
+                    spriteNumber = 0;
+                }
+                else if(spriteNumber == 1 && bookReturnNumber <= 5)
+                {
+                    spriteNumber = 3;
+                }
+                else if(spriteNumber == 1 && bookReturnNumber > 5)
+                {
+                    spriteNumber = 4;
+                }
+                else if(spriteNumber == 3 || spriteNumber == 4)
+                {
+                    spriteNumber = 1;
+                }
+            }
+
+            if(gameObject.name == "Desk(Clone)" && computerPlaced == true)
+            {
+                computer.GetComponent<FurnitureMovement>().FurnitureSpriteManager();
+            }
+
+            if(gameObject.name == "Bookshelf(Clone)" || gameObject.name == "Desk(Clone)" || gameObject.name == "Book Return")
+            {
+                transform.GetChild(0).eulerAngles = new Vector3(0,0,transform.GetChild(0).transform.eulerAngles.z + 90);
+            }
+
+            FurnitureSpriteManager();
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D col)
+    {
+        if(gameObject.name == "Computer(Clone)" && col.gameObject.name == "Computer Collision Spot" && beenPlaced == false)
+        {
+            cantPlace = false;
+            col.gameObject.transform.parent.GetComponent<FurnitureMovement>().computerPlaced = true;
+            col.gameObject.transform.parent.GetComponent<FurnitureMovement>().computer = gameObject;
+            gameObject.GetComponent<BoxCollider2D>().isTrigger = true;
+
+            table = col.gameObject.transform.parent.gameObject;
+
+            snapToDesk = true;
+
+            CheckSpotPosition();
+        }
+
+        if(col.gameObject == shopCustomizationScript.destroyFurnitureButton)
+        {
+            collidingWithDestroyButton = true;
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D col)
+    {
+        if(gameObject.name == "Computer(Clone)" && col.gameObject.name == "Computer Collision Spot")
+        {
+            cantPlace = true;
+            col.gameObject.transform.parent.GetComponent<FurnitureMovement>().computerPlaced = false;
+            col.gameObject.transform.parent.GetComponent<FurnitureMovement>().computer = null;
+            gameObject.GetComponent<BoxCollider2D>().isTrigger = false;
+            table = null;
+        }
+
+        if(col.gameObject == shopCustomizationScript.destroyFurnitureButton)
+        {
+            collidingWithDestroyButton = false;
+        }
+    }
+
+    void OnCollisionEnter2D(Collision2D col)
+    {
+        if(gameObject.name == "Chair(Clone)" && col.gameObject.name == "Chair Collision Spot" && beenPlaced == false || gameObject.name == "Chair(Clone)" && col.gameObject.name == "Chair Collision Spot" && incorrectlyPlaced == true)
+        {
+            if(col.gameObject.transform.parent.name == "Table(Clone)")
+            {
+                table = col.gameObject.transform.parent.gameObject;
+                col.gameObject.transform.parent.GetComponent<FurnitureMovement>().CustomerChairAmount.Add(gameObject);
+                if(!sceneManager.TableGiver.Contains(col.gameObject.transform.parent.gameObject))
+                {
+                    sceneManager.TableGiver.Add(col.gameObject.transform.parent.gameObject);
+                }
+            }
+            else if(col.gameObject.transform.parent.transform.parent.name == "Desk(Clone)")
+            {
+                table = col.gameObject.transform.parent.transform.parent.gameObject;
+                col.gameObject.transform.parent.gameObject.transform.parent.gameObject.GetComponent<FurnitureMovement>().CustomerChairAmount.Add(gameObject);
+                if(!sceneManager.TableGiver.Contains(col.gameObject.transform.parent.gameObject))
+                {
+                    sceneManager.TableGiver.Add(col.gameObject.transform.parent.gameObject.transform.parent.gameObject);
+                }
+            }
+            incorrectlyPlaced = false;
+            chairSpot = col.gameObject;
+            CheckSpotPosition();
+        }
+    }
+
+    public void OnCollisionStay2D(Collision2D col)
+    {
+        if(gameObject.name == "Chair(Clone)" && col.gameObject.name == "Chair Collision Spot" || gameObject.name == "Desk(Clone)" && col.gameObject.name == "Computer(Clone)" || gameObject.name == "Computer(Clone)")
+        {
+            return;
+        }
+        else if(gameObject.name == "Chair(Clone)" && beenPlaced == true && table != null)
+        {   
+            table.GetComponent<FurnitureMovement>().cantPlace = true;
+        }
+        else
+        {
+            cantPlace = true;
+        }
+    }
+
+    void OnCollisionExit2D(Collision2D col)
+    {
+        if(gameObject.name != "Computer(Clone)")
+        {
+            cantPlace = false;
+        }
+
+        if(gameObject.name == "Chair(Clone)" && beenPlaced == true && table != null)
+        {   
+            table.GetComponent<FurnitureMovement>().cantPlace = false;
+        }
+
+        if(gameObject.name == "Chair(Clone)" && col.gameObject.name == "Chair Collision Spot")
+        {
+            if(col.gameObject.transform.parent.name == "Table(Clone)")
+            {
+                col.gameObject.transform.parent.gameObject.GetComponent<FurnitureMovement>().CustomerChairAmount.Remove(gameObject);
+                if(col.gameObject.transform.parent.gameObject.GetComponent<FurnitureMovement>().CustomerChairAmount.Count == 0)
+                {
+                    sceneManager.TableGiver.Remove(col.gameObject.transform.parent.gameObject);
+                }
+            }
+            else if(col.gameObject.transform.parent.gameObject.transform.parent.name == "Desk(Clone)")
+            {
+                col.gameObject.transform.parent.gameObject.transform.parent.gameObject.GetComponent<FurnitureMovement>().CustomerChairAmount.Remove(gameObject);
+                if(col.gameObject.transform.parent.gameObject.transform.parent.gameObject.GetComponent<FurnitureMovement>().CustomerChairAmount.Count == 0)
+                {
+                    sceneManager.TableGiver.Remove(col.gameObject.transform.parent.gameObject.transform.parent.gameObject);
+                }
+            }
+            if(col.gameObject == chairSpot)
+            {
+                chairSpot = null;
+                table = null;
+                beenTried = false;
+            }
+        }
+    }
+
+    public void TryToPlace()
+    {
+        if(beenPlaced == true)
+        {
+            beenPlaced = false;
+            objSpriteRenderer.sortingOrder += 102;
+            if(gameObject.name == "Table(Clone)" && CustomerChairAmount.Count > 0 || gameObject.name == "Desk(Clone)" && CustomerChairAmount.Count > 0)
+            {
+                for(int i = 0; i < CustomerChairAmount.Count; i++)
+                {
+                    CustomerChairAmount[i].GetComponent<SpriteRenderer>().sortingOrder += 102;
+                }
+            }
+            
+            if(gameObject.name == "Desk(Clone)" && computerPlaced == true)
+            {
+                computer.GetComponent<SpriteRenderer>().sortingOrder += 102;
+                for(int i = 0; i < computer.transform.childCount; i++)
+                {
+                    computer.transform.GetChild(i).GetComponent<SpriteRenderer>().sortingOrder += 102;
+                }
+            }
+
+            if(gameObject.name == "Computer(Clone)")
+            {
+                for(int i = 0; i < gameObject.transform.childCount; i++)
+                {
+                    gameObject.transform.GetChild(i).GetComponent<SpriteRenderer>().sortingOrder += 102;
+                }
+            }
+        }
+        else
+        {
+            beenPlaced = true;
+            if(cantPlace == false)
+            {
+                objSpriteRenderer.sortingOrder -= 102;
+                if(gameObject.name == "Table(Clone)" && CustomerChairAmount.Count > 0 || gameObject.name == "Desk(Clone)" && CustomerChairAmount.Count > 0)
+                {
+                    for(int i = 0; i < CustomerChairAmount.Count; i++)
+                    {
+                        CustomerChairAmount[i].GetComponent<SpriteRenderer>().sortingOrder -= 102;
+                    }
+                }
+                
+                if(gameObject.name == "Desk(Clone)" && computerPlaced == true)
+                {
+                    computer.GetComponent<SpriteRenderer>().sortingOrder -= 102;
+                    for(int i = 0; i < computer.transform.childCount; i++)
+                    {
+                        computer.transform.GetChild(i).GetComponent<SpriteRenderer>().sortingOrder -= 102;
+                    }
+                }
+                
+                if(gameObject.name == "Computer(Clone)")
+                {
+                    for(int i = 0; i < gameObject.transform.childCount; i++)
+                    {
+                        gameObject.transform.GetChild(i).GetComponent<SpriteRenderer>().sortingOrder -= 102;
+                    }
+                }
+            }
+        }
+    }
+
+    void CheckSpotPosition()
+    {
+        if(gameObject.name == "Chair(Clone)" && table.name == "Table(Clone)")
+        {
+            if(chairSpot == table.GetComponent<FurnitureMovement>().chairSpotOne)
+            {
+                spriteNumber = 3;
+            }
+            else if(chairSpot == table.GetComponent<FurnitureMovement>().chairSpotTwo)
+            {
+                spriteNumber = 0;
+            }
+            else if(chairSpot == table.GetComponent<FurnitureMovement>().chairSpotThree)
+            {
+                spriteNumber = 1;
+            }
+            else if(chairSpot == table.GetComponent<FurnitureMovement>().chairSpotFour)
+            {
+                spriteNumber = 2;
+            }
+        }
+        else if(gameObject.name == "Chair(Clone)" && table.name == "Desk(Clone)")
+        {
+            if(table.GetComponent<FurnitureMovement>().spriteNumber == 0)
+            {
+                spriteNumber = 1;
+            }
+            else if(table.GetComponent<FurnitureMovement>().spriteNumber == 1)
+            {
+                spriteNumber = 2;
+            }
+            else if(table.GetComponent<FurnitureMovement>().spriteNumber == 2)
+            {
+                spriteNumber = 3;
+            }
+            else if(table.GetComponent<FurnitureMovement>().spriteNumber == 3)
+            {
+                spriteNumber = 0;
+            }
+        }
+        else if(gameObject.name == "Computer(Clone)")
+        {
+            if(table.GetComponent<FurnitureMovement>().spriteNumber == 0)
+            {
+                spriteNumber = 3;
+            }
+            else if(table.GetComponent<FurnitureMovement>().spriteNumber == 1)
+            {
+                spriteNumber = 0;
+            }
+            else if(table.GetComponent<FurnitureMovement>().spriteNumber == 2)
+            {
+                spriteNumber = 1;
+            }
+            else if(table.GetComponent<FurnitureMovement>().spriteNumber == 3)
+            {
+                spriteNumber = 2;
+            }
+        }
+        beenTried = true;
+        FurnitureSpriteManager();
+    }
+
+    public void FurnitureSpriteManager()
+    {
+        if(gameObject.name == "Bookshelf(Clone)")
+        {
+            if(spriteNumber == 0)
+            {
+                objSpriteRenderer.sprite = spriteController.sideFacingBookshelf;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 1)
+            {
+                objSpriteRenderer.sprite = spriteController.backFacingBookshelf;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 2)
+            {
+                objSpriteRenderer.sprite = spriteController.sideFacingBookshelf;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 3)
+            {
+                objSpriteRenderer.sprite = spriteController.frontFacingBookshelf;
+                spriteNumber = 0;
+            }
+        }
+        
+        if(gameObject.name == "Chair(Clone)")
+        {
+            if(spriteNumber == 0)
+            {
+                objSpriteRenderer.flipX = false;
+                objSpriteRenderer.sprite = spriteController.sideFacingChair;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 1)
+            {
+                objSpriteRenderer.flipX = false;
+                objSpriteRenderer.sprite = spriteController.backFacingChair;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 2)
+            {
+                objSpriteRenderer.flipX = true;
+                objSpriteRenderer.sprite = spriteController.sideFacingChair;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 3)
+            {
+                objSpriteRenderer.flipX = false;
+                objSpriteRenderer.sprite = spriteController.frontFacingChair;
+                spriteNumber = 0;
+            }
+        }
+        
+        if(gameObject.name == "Desk(Clone)")
+        {
+            if(spriteNumber == 0)
+            {
+                GetComponent<BoxCollider2D>().size = new Vector2(0.6f, 0.9f);
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x - 0.2f, gameObject.transform.position.y + 0.2f);
+                objSpriteRenderer.flipX = true;
+                objSpriteRenderer.sprite = spriteController.sideFacingDesk;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 1)
+            {
+                GetComponent<BoxCollider2D>().size = new Vector2(0.9f, 0.6f);
+                GetComponent<BoxCollider2D>().offset = new Vector2(0.004f, -0.055f);
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y + 0.2f);
+                objSpriteRenderer.flipX = false;
+                objSpriteRenderer.sprite = spriteController.backFacingDesk;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 2)
+            {
+                GetComponent<BoxCollider2D>().size = new Vector2(0.6f, 0.9f);
+                GetComponent<BoxCollider2D>().offset = new Vector2(0.004f, 0.055f);
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x + 0.2f, gameObject.transform.position.y + 0.2f);
+                objSpriteRenderer.sprite = spriteController.sideFacingDesk;
+                spriteNumber++;
+            }
+            else if(spriteNumber == 3)
+            {
+                GetComponent<BoxCollider2D>().size = new Vector2(0.9f, 0.6f);
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y + 0.7f);
+                objSpriteRenderer.sprite = spriteController.frontFacingDesk;
+                spriteNumber = 0;
+            }
+        }
+
+        if(gameObject.name == "Table(Clone)")
+        {
+            if(spriteNumber == 0)
+            {
+                objSpriteRenderer.sprite = spriteController.table;
+            }
+            else if(spriteNumber == 1)
+            {
+                objSpriteRenderer.sprite = spriteController.topFacingTableOne;
+            }
+            else if(spriteNumber == 2)
+            {
+                objSpriteRenderer.sprite = spriteController.topFacingTableTwo;
+            }
+            else if(spriteNumber == 3)
+            {
+                objSpriteRenderer.sprite = spriteController.leftFacingTableOne;
+            }
+            else if(spriteNumber == 4)
+            {
+                objSpriteRenderer.sprite = spriteController.leftFacingTableTwo;
+            }
+            else if(spriteNumber == 5)
+            {
+                objSpriteRenderer.sprite = spriteController.bottomFacingTableOne;
+            }
+            else if(spriteNumber == 6)
+            {
+                objSpriteRenderer.sprite = spriteController.bottomFacingTableTwo;
+            }
+            else if(spriteNumber == 7)
+            {
+                objSpriteRenderer.sprite = spriteController.rightFacingTableOne;
+            }
+            else if(spriteNumber == 8)
+            {
+                objSpriteRenderer.sprite = spriteController.rightFacingTableTwo;
+            }
+            else if(spriteNumber == 9)
+            {
+                objSpriteRenderer.sprite = spriteController.upAndDownFacingTableOne;
+            }
+            else if(spriteNumber == 10)
+            {
+                objSpriteRenderer.sprite = spriteController.upAndDownFacingTableTwo;
+            }
+            else if(spriteNumber == 11)
+            {
+                objSpriteRenderer.sprite = spriteController.leftAndRightFacingTableOne;
+            }
+            else if(spriteNumber == 12)
+            {
+                objSpriteRenderer.sprite = spriteController.leftAndRightFacingTableTwo;
+            }
+            else if(spriteNumber == 13)
+            {
+                objSpriteRenderer.sprite = spriteController.upAndRightFacingTableOne;
+            }
+            else if(spriteNumber == 14)
+            {
+                objSpriteRenderer.sprite = spriteController.upAndRightFacingTableTwo;
+            }
+            else if(spriteNumber == 15)
+            {
+                objSpriteRenderer.sprite = spriteController.upAndLeftFacingTableOne;
+            }
+            else if(spriteNumber == 16)
+            {
+                objSpriteRenderer.sprite = spriteController.upAndLeftFacingTableTwo;
+            }
+            else if(spriteNumber == 17)
+            {
+                objSpriteRenderer.sprite = spriteController.downAndRightFacingTableOne;
+            }
+            else if(spriteNumber == 18)
+            {
+                objSpriteRenderer.sprite = spriteController.downAndRightFacingTableTwo;
+            }
+            else if(spriteNumber == 19)
+            {
+                objSpriteRenderer.sprite = spriteController.downAndLeftFacingTableOne;
+            }
+            else if(spriteNumber == 20)
+            {
+                objSpriteRenderer.sprite = spriteController.downAndLeftFacingTableTwo;
+            }
+            else if(spriteNumber == 21)
+            {
+                objSpriteRenderer.sprite = spriteController.threeOrMoreTableOne;
+            }
+            else if(spriteNumber == 22)
+            {
+                objSpriteRenderer.sprite = spriteController.threeOrMoreTableTwo;
+            }
+            else if(spriteNumber == 23)
+            {
+                objSpriteRenderer.sprite = spriteController.tableDirty;
+            }
+        }
+
+        if(gameObject.name == "Computer(Clone)")
+        {
+            if(spriteNumber == 0)
+            {
+                objSpriteRenderer.sprite = spriteController.leftFacingComputer;
+                spriteNumber++;
+                transform.GetChild(0).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingKeyboard;
+                transform.GetChild(0).gameObject.transform.position = new Vector2(gameObject.transform.position.x + 0.48f, gameObject.transform.position.y - 0.15f);
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingMouse;
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x + 0.48f, gameObject.transform.position.y + 0.4f);
+            }
+            else if(spriteNumber == 1)
+            {
+                objSpriteRenderer.sprite = spriteController.backFacingComputer;
+                spriteNumber++;
+                transform.GetChild(0).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.backFacingKeyboard;
+                transform.GetChild(0).gameObject.transform.position = new Vector2(gameObject.transform.position.x + 0.1f, gameObject.transform.position.y + 0.22f);
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingMouse;
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().flipY = true;
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x - 0.5f, gameObject.transform.position.y + 0.22f);
+            }
+            else if(spriteNumber == 2)
+            {
+                objSpriteRenderer.sprite = spriteController.rightFacingComputer;
+                spriteNumber++;
+                transform.GetChild(0).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingKeyboard;
+                transform.GetChild(0).gameObject.transform.position = new Vector2(gameObject.transform.position.x - 0.48f, gameObject.transform.position.y - 0.15f);
+                transform.GetChild(0).gameObject.GetComponent<SpriteRenderer>().flipX = true;
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.sideFacingMouse;
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().flipY = false;
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().flipX = true;
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x - 0.48f, gameObject.transform.position.y + 0.4f);
+            }
+            else if(spriteNumber == 3)
+            {
+                objSpriteRenderer.sprite = spriteController.frontFacingComputer;
+                spriteNumber = 0;
+                transform.GetChild(0).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingKeyboard;
+                transform.GetChild(0).gameObject.transform.position = new Vector2(gameObject.transform.position.x - 0.1f, gameObject.transform.position.y - 0.58f);
+                transform.GetChild(0).gameObject.GetComponent<SpriteRenderer>().flipX = false;
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().sprite = spriteController.frontFacingMouse;
+                transform.GetChild(1).gameObject.GetComponent<SpriteRenderer>().flipX = false;
+                transform.GetChild(1).gameObject.transform.position = new Vector2(gameObject.transform.position.x + 0.5f, gameObject.transform.position.y - 0.58f);
+            }
+        }
+
+        if(gameObject.name == "Book Return")
+        {
+            if(spriteNumber == 0)
+            {
+                objSpriteRenderer.sprite = spriteController.frontFacingBookReturnEmpty;
+            }
+            else if(spriteNumber == 1)
+            {
+                objSpriteRenderer.sprite = spriteController.frontFacingBookReturnFull;
+            }
+            else if(spriteNumber == 2)
+            {
+                objSpriteRenderer.sprite = spriteController.sideFacingBookReturnEmpty;
+            }
+            else if(spriteNumber == 3)
+            {
+                objSpriteRenderer.sprite = spriteController.sideFacingBookReturnMid;
+            }
+            else if(spriteNumber == 4)
+            {
+                objSpriteRenderer.sprite = spriteController.sideFacingBookReturnFull;
+            }
+        }
+    }
+}
